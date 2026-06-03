@@ -14,9 +14,17 @@ import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.os.Handler
 import android.os.Looper
-import java.io.File
-
+import android.content.Intent
+import android.speech.RecognizerIntent;
+import android.app.Activity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.ComponentActivity
+import android.view.Gravity
 class CustomKeyboardService : InputMethodService() {
+    private val REQUEST_CODE_SPEECH = 1
+    private lateinit var voiceIntent: Intent
+    private lateinit var voiceLauncher: ActivityResultLauncher<Intent>
 
     private lateinit var windowManager: WindowManager
     private var floatingKeyboardView: CustomKeyboardView? = null
@@ -60,6 +68,9 @@ class CustomKeyboardService : InputMethodService() {
 
     companion object {
         private const val TAG = "CustomKeyboardService"
+        @Volatile
+        private var instance: CustomKeyboardService? = null
+        fun getInstance(): CustomKeyboardService? = instance
     }
 
 
@@ -77,6 +88,44 @@ class CustomKeyboardService : InputMethodService() {
         loadKeyboardSettings()
         CustomKeyboardClipboard.ensureMapSize(Constants.CLIPBOARD_MAX_SIZE)
         super.onCreate()
+        instance = this
+    }
+
+    fun initVoiceLauncher(activity: ComponentActivity) {
+        Log.i(TAG, "initVoiceLauncher")
+        voiceLauncher = activity.registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val data = result.data
+                val results = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                if (!results.isNullOrEmpty()) {
+                    currentInputConnection?.commitText(results[0], 1)
+                }
+            }
+        }
+    }
+    private fun startVoiceRecognition() {
+        // Ensure the launcher is initialized. You should call initVoiceLauncher()
+        // from your main Activity, passing 'this' (the Activity) as the context.
+        if (!::voiceLauncher.isInitialized) {
+            Log.i(TAG, "voiceLauncher is not initialized")
+            // Handle error or initialize from your main Activity
+            return
+        }
+
+        val voiceIntent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...")
+        }
+
+        // Check if there's an app to handle the intent
+        if (voiceIntent.resolveActivity(packageManager) != null) {
+            voiceLauncher.launch(voiceIntent)
+        } else {
+            Log.i(TAG, "voiceIntent is not resolved")
+            // Handle the case where speech recognition is not available
+        }
     }
 
     private fun loadKeyboardSettings() {
@@ -92,6 +141,7 @@ class CustomKeyboardService : InputMethodService() {
     override fun onDestroy() {
         closeAllKeyboards()
         clipboardManager.removePrimaryClipChangedListener(clipboardListener)
+        instance = null
         super.onDestroy()
     }
 
@@ -203,6 +253,7 @@ class CustomKeyboardService : InputMethodService() {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         )
+        params.alpha = 0.8f
 
         try {
             windowManager.addView(floatingKeyboardView, params)
@@ -355,6 +406,7 @@ class CustomKeyboardService : InputMethodService() {
                     WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                     PixelFormat.TRANSLUCENT
                 )
+                params.alpha = 0.8f
 
                 windowManager.updateViewLayout(view, params)
                 view.invalidateAllKeys()
@@ -436,6 +488,7 @@ class CustomKeyboardService : InputMethodService() {
                     handleCustomKey(code, label)
                 }
                 when (code) {
+
                     KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT -> {
                         metaState = toggleMetaState(metaState, KeyEvent.META_SHIFT_ON)
                         isShiftPressed = !isShiftPressed
@@ -575,7 +628,9 @@ class CustomKeyboardService : InputMethodService() {
                 Constants.KEYCODE_OPEN_CLIPBOARD -> {
                     toggleClipboardLayout()
                 }
-
+                Constants.KEYCODE_VOICE_INPUT -> {
+                    startVoiceRecognition()
+                }
             }
         }
     }

@@ -155,7 +155,7 @@ class CustomKeyboardView @JvmOverloads constructor(
 
         key?.let {
             when {
-                isFunctionOn && key.keyCodeFunction != null -> {
+                isFunctionOn && (key.labelFunction != null || key.keyCodeFunction != null) -> {
                    keyboardActionListener?.onKey(it.keyCodeFunction, it.labelFunction)
                 }
                 isLongPressHandled -> {
@@ -414,7 +414,7 @@ class CustomKeyboardView @JvmOverloads constructor(
 
         val keyboardBackgroundColor = if (isDarkTheme) adjustColor(accentColor, 0.2f, 0.6f) else adjustColor(accentColor, 0.99f, 0.2f)
         val keyBackgroundColor = if (isDarkTheme) adjustColor(accentColor, 0.25f, 0.4f) else adjustColor(accentColor, 1.0f, 0.1f)
-        val keyModifierBackgroundColor = if (isDarkTheme) adjustColor(accentColor, 1.2f, 0.7f) else adjustColor(accentColor, 1.0f, 1.0f)
+        val keyModifierBackgroundColor = if (isDarkTheme) adjustColor(accentColor, 0.35f, 0.4f) else adjustColor(accentColor, 1.0f, 1.0f)
         val keyLabelTextColor = if (isDarkTheme) Constants.TEXT_COLOR_DARK_THEME else Constants.TEXT_COLOR_LIGHT_THEME
         val keyLabelLongPressTextColor = if (isDarkTheme) adjustColor(accentColor, 1.4f, 0.9f) else adjustColor(accentColor, 0.95f, 1.0f)
 

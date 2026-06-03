@@ -39,6 +39,7 @@ class Constants {
         const val KEYCODE_CLIPBOARD_ENTRY = -22
         const val KEYCODE_CLIPBOARD_ERASE = -23
         const val KEYCODE_OPEN_CLIPBOARD = -24
+        const val KEYCODE_VOICE_INPUT = -25
 
         // Default values.
         const val DEFAULT_KEY_HEIGHT = 40f // Logical DP

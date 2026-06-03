@@ -57,10 +57,12 @@
           "labelFunction": ":"
         },
         { "label": "o",
-          "labelFunction": "F11"
+          "labelFunction": "F11",
+          "keyCodeFunction":141
         },
         { "label": "p",
-          "labelFunction": "F12"
+          "labelFunction": "F12",
+          "keyCodeFunction":142
         }
       ]
     },
@@ -149,14 +151,16 @@
     {
       "keys": [
         {
-          "label": "ctl",
+          "label": "Ctl",
           "keyCode": 113,
           "isModifier": true
         },
         {
-          "label": "alt",
+          "label": "Alt",
           "keyCode": 57,
-          "isModifier": true
+          "isModifier": true,
+          "labelLongPress": "\uD83C\uDF99\uFE0F",
+          "keyCodeLongPress": -25
         },
         {
           "label": "Fn",

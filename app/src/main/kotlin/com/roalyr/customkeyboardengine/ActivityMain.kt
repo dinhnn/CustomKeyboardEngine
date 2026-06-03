@@ -37,16 +37,28 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.roalyr.customkeyboardengine.ui.theme.CustomKeyboardEngineTheme
-import java.io.File
+import android.os.Looper
+import android.os.Handler
 
 /**
  * Main activity for the Custom Keyboard Engine.
  * Provides a UI for granting permissions, changing input methods, and copying default layouts/settings.
  */
 class ActivityMain : ComponentActivity() {
-
+    private fun findAndInitVoiceLauncher() {
+        val service = CustomKeyboardService.getInstance()
+        if (service != null) {
+            service.initVoiceLauncher(this)
+        } else {
+            // Try again after a short delay (service might not be ready)
+            Handler(Looper.getMainLooper()).postDelayed({
+                findAndInitVoiceLauncher()
+            }, 200)
+        }
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        findAndInitVoiceLauncher()
         setContent {
             CustomKeyboardEngineTheme {
                 Scaffold(
