@@ -71,15 +71,6 @@ class ActivityMain : ComponentActivity() {
 
 
 
-                        // Buttons
-                        Button(
-                            onClick = { requestStoragePermission() },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(stringResource(R.string.btn_grant_storage))
-                        }
-
                         Button(
                             onClick = { requestOverlayPermission() },
                             modifier = Modifier.fillMaxWidth(),
@@ -96,76 +87,7 @@ class ActivityMain : ComponentActivity() {
                             Text(stringResource(R.string.btn_change_input))
                         }
 
-                        Button(
-                            onClick = { copyDefaults() },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(stringResource(R.string.btn_copy_defaults))
-                        }
 
-                        Button(
-                            onClick = { copyDefaultSettings() },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(stringResource(R.string.btn_copy_settings))
-                        }
-
-                        // Path Reference
-                        Text(
-                            text = stringResource(R.string.label_working_dir),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp)
-                        )
-                        Box(
-                            modifier = Modifier
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                                .padding(8.dp)
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = stringResource(R.string.working_dir_path),
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium,
-                                fontFamily = FontFamily.Monospace,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        // Hint Messages
-                        Text(
-                            text = stringResource(R.string.hint_json_files),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        Text(
-                            text = stringResource(R.string.hint_directory),
-                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Normal,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // Warning Message
-                        Text(
-                            text = stringResource(R.string.warning_backup),
-                            color = MaterialTheme.colorScheme.error,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            textAlign = TextAlign.Start,
-                            modifier = Modifier.fillMaxWidth()
-                        )
 
                         // Text Input Field
                         val text = remember { mutableStateOf("") }
@@ -175,15 +97,6 @@ class ActivityMain : ComponentActivity() {
                             placeholder = { Text(stringResource(R.string.hint_test_input)) },
                             modifier = Modifier.fillMaxWidth()
                         )
-
-                        // GitHub Link
-                        Button(
-                            onClick = { openUrl("https://github.com/roalyr/CustomKeyboardEngine") },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaterialTheme.shapes.medium
-                        ) {
-                            Text(stringResource(R.string.btn_github))
-                        }
 
                         Spacer(modifier = Modifier.height(16.dp)) // Add space at the bottom
                     }
@@ -210,40 +123,5 @@ class ActivityMain : ComponentActivity() {
         val intent = Intent(Settings.ACTION_INPUT_METHOD_SETTINGS)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
         startActivity(intent)
-    }
-
-    private fun copyDefaults() {
-        if (ClassFunctionsFiles.ensureMediaDirectoriesExistAndCopyDefaults(windowManager, this, resources)){
-            Toast.makeText(this, getString(R.string.toast_defaults_copied), Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /**
-     * Copies default settings.json from resources to the app working directory.
-     *
-     * Creates the media directory if it doesn't exist, then copies `R.raw.settings_default`
-     * to `Android/media/com.roalyr.customkeyboardengine/settings.json`. If the file already exists,
-     * it is overwritten.
-     *
-     * Shows toast notifications for success or failure.
-     */
-    private fun copyDefaultSettings() {
-        val appDir = File(Constants.MEDIA_APP_DIRECTORY)
-        if (!appDir.exists() && !appDir.mkdirs()) {
-            Toast.makeText(this, getString(R.string.toast_folder_failed), Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val targetFile = File(Constants.MEDIA_SETTINGS_FILE)
-        try {
-            resources.openRawResource(R.raw.settings_default).use { inputStream ->
-                targetFile.outputStream().use { outputStream ->
-                    inputStream.copyTo(outputStream)
-                }
-            }
-            Toast.makeText(this, getString(R.string.toast_settings_copied), Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, getString(R.string.toast_settings_failed, e.message), Toast.LENGTH_SHORT).show()
-        }
     }
 }

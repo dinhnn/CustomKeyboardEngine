@@ -92,16 +92,10 @@
         }
       ]
     },
-
     {
       "defaultKeyWidth": 10,
       "defaultKeyHeight": 45,
       "keys": [
-        {
-          "icon": "@drawable/ic_anchor",
-          "keyCode": -12,
-          "isModifier": true
-        },
         {
           "icon": "@drawable/ic_clipboard",
           "keyCode": -24,
@@ -116,6 +110,11 @@
         { "label": "z" },
         { "label": "a" },
         { "label": "x" },
+        {
+          "icon": "@drawable/ic_anchor",
+          "keyCode": -12,
+          "isModifier": true
+        },
         {
           "labelLongPress": "hold to",
           "label": "clear",

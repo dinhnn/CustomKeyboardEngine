@@ -64,8 +64,10 @@ data class Row(
 data class Key(
     val keyCode: Int? = null,
     val keyCodeLongPress: Int? = null,
+    var keyCodeFunction: Int? = null,
     var label: String? = null,
     val labelLongPress: String? = null,
+    var labelFunction: String? = null,
     val icon: String? = null,
 
     var keyWidth: Float? = null, // Width percentage

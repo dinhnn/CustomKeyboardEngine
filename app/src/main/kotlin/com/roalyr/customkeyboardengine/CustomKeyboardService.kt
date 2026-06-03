@@ -21,7 +21,6 @@ class CustomKeyboardService : InputMethodService() {
     private lateinit var windowManager: WindowManager
     private var floatingKeyboardView: CustomKeyboardView? = null
     private var keyboardView: CustomKeyboardView? = null
-    private var serviceKeyboardView: CustomKeyboardView? = null
     private var inputView: View? = null
 
     private var languageLayouts = mutableListOf<Pair<CustomKeyboard, Boolean>>()
@@ -42,6 +41,7 @@ class CustomKeyboardService : InputMethodService() {
     private var isCtrlPressed = false
     private var isAltPressed = false
     private var isCapsPressed = false
+    private var isFunctionPressed = false
 
     private var metaState = 0 // Combined meta state
     private var modifiedMetaState = 0 // Modified meta state for handling caps lock
@@ -117,14 +117,12 @@ class CustomKeyboardService : InputMethodService() {
         super.onFinishInputView(finishingInput)
         keyboardView?.cancelAllEvents()
         floatingKeyboardView?.cancelAllEvents()
-        serviceKeyboardView?.cancelAllEvents()
     }
 
     override fun onWindowHidden() {
         super.onWindowHidden()
         keyboardView?.cancelAllEvents()
         floatingKeyboardView?.cancelAllEvents()
-        serviceKeyboardView?.cancelAllEvents()
     }
 
     private fun initClipboardManager() {
@@ -234,35 +232,6 @@ class CustomKeyboardService : InputMethodService() {
         return rootView
     }
 
-    private fun createServiceKeyboard(): View? {
-        val rootView = inputView ?: run {
-            val errorMsg = "Input view is null."
-            ClassFunctionsPopups.showErrorPopup(windowManager, this, TAG, errorMsg)
-            return null
-        }
-
-        serviceKeyboardView = rootView.findViewById(R.id.service_keyboard_view) as? CustomKeyboardView
-        serviceKeyboardView?.let { view ->
-            val customKeyboardPair = serviceLayouts[Constants.LAYOUT_SERVICE_DEFAULT]
-            if (customKeyboardPair != null) {
-                val (customKeyboard) = customKeyboardPair
-                view.updateKeyboard(customKeyboard)
-                view.updateSettings(settings)
-                setKeyboardActionListener(view)
-
-            } else {
-                val errorMsg = "Service keyboard layout not found."
-                ClassFunctionsPopups.showErrorPopup(windowManager, this, TAG, errorMsg)
-            }
-        } ?: run {
-            val errorMsg = "Service keyboard view not found."
-            ClassFunctionsPopups.showErrorPopup(windowManager, this, TAG, errorMsg)
-        }
-
-        return rootView
-    }
-
-
 
     ////////////////////////////////////////////
     // Unified method for keyboard switching
@@ -308,13 +277,13 @@ class CustomKeyboardService : InputMethodService() {
         inputView = if (isFloatingKeyboard) {
             // Check width to prevent keyboard from crossing screen
             if (floatingKeyboardWidth == 0) {
-                floatingKeyboardWidth = getScreenWidth()
+                floatingKeyboardWidth = 75*Math.min(getScreenWidth(),getScreenHeight())/100
             }
             if (floatingKeyboardWidth > screenWidth) {
                 floatingKeyboardWidth = getScreenWidth()
             }
             createInputView()
-            createServiceKeyboard()
+            //createServiceKeyboard()
             createFloatingKeyboard()
             inputView
         } else {
@@ -337,7 +306,6 @@ class CustomKeyboardService : InputMethodService() {
     // Helper functions for closing keyboards
     private fun closeAllKeyboards() {
         closeStandardKeyboard()
-        closeServiceKeyboard()
         closeFloatingKeyboard()
     }
 
@@ -364,19 +332,11 @@ class CustomKeyboardService : InputMethodService() {
         }
     }
 
-    private fun closeServiceKeyboard() {
-        serviceKeyboardView?.let { view ->
-            (view.parent as? ViewGroup)?.removeView(view)
-            serviceKeyboardView = null
-        }
-    }
-
     ////////////////////////////////////////////
     // Helper functions
     private fun invalidateAllKeysOnAllKeyboards() {
         floatingKeyboardView?.invalidateAllKeys()
         keyboardView?.invalidateAllKeys()
-        serviceKeyboardView?.invalidateAllKeys()
     }
 
     ////////////////////////////////////////////
@@ -479,21 +439,25 @@ class CustomKeyboardService : InputMethodService() {
                     KeyEvent.KEYCODE_SHIFT_LEFT, KeyEvent.KEYCODE_SHIFT_RIGHT -> {
                         metaState = toggleMetaState(metaState, KeyEvent.META_SHIFT_ON)
                         isShiftPressed = !isShiftPressed
-                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed)
+                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
                     }
                     KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_CTRL_RIGHT -> {
                         metaState = toggleMetaState(metaState, KeyEvent.META_CTRL_ON)
                         isCtrlPressed = !isCtrlPressed
-                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed)
+                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
                     }
                     KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_ALT_RIGHT -> {
                         metaState = toggleMetaState(metaState, KeyEvent.META_ALT_ON)
                         isAltPressed = !isAltPressed
-                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed)
+                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
                     }
                     KeyEvent.KEYCODE_CAPS_LOCK -> {
                         isCapsPressed = !isCapsPressed
-                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed)
+                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
+                    }
+                    KeyEvent.KEYCODE_FUNCTION -> {
+                        isFunctionPressed = !isFunctionPressed
+                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
                     }
                     else -> {
                         modifiedMetaState = if (isCapsPressed) {
@@ -503,7 +467,7 @@ class CustomKeyboardService : InputMethodService() {
                         }
                         handleKey(code, label)
                         resetMetaStates()
-                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed)
+                        keyboardView.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
                     }
                 }
             }
@@ -549,7 +513,7 @@ class CustomKeyboardService : InputMethodService() {
                     // If no key code found, commit label as text "as is".
                     val finalKeyLabel = if (isShiftPressed || isCapsPressed) {
                         resetMetaStates()
-                        keyboardView?.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed)
+                        keyboardView?.updateMetaState(isShiftPressed, isCtrlPressed, isAltPressed, isCapsPressed, isFunctionPressed)
                         keyLabel.uppercase()
                     } else {
                         keyLabel.lowercase()
@@ -761,45 +725,20 @@ class CustomKeyboardService : InputMethodService() {
         languageLayouts.clear()
         serviceLayouts.clear()
 
-        val languageDirectory = File(Constants.MEDIA_LAYOUTS_LANGUAGE_DIRECTORY)
-        val serviceDirectory = File(Constants.MEDIA_LAYOUTS_SERVICE_DIRECTORY)
-
         // Reload language layouts
         reloadLayouts(
-            directory = languageDirectory,
             layoutType = "Language",
-            onFileParsed = { keyboard, fileName, isFallback ->
-                languageLayouts.add(Pair(keyboard, isFallback))
-            },
             onFallback = { fallbackLayout ->
                 languageLayouts.add(Pair(fallbackLayout, true))
                 Log.w(TAG, "Using fallback language layout.")
             }
         )
 
-        // Reload service layouts
-        reloadLayouts(
-            directory = serviceDirectory,
-            layoutType = "Service",
-            onFileParsed = { keyboard, fileName, isFallback ->
-                serviceLayouts[fileName] = Pair(keyboard, isFallback)
-            },
-            onFallback = { fallbackLayout ->
-                serviceLayouts[Constants.LAYOUT_SERVICE_DEFAULT] = Pair(fallbackLayout, true)
-                Log.w(TAG, "Using fallback service layout.")
-            }
-        )
-
         // Reload clipboard layouts (stored in the same directory as service layouts)
         reloadLayouts(
-            directory = serviceDirectory,
             layoutType = "Clipboard",
-            onFileParsed = { keyboard, fileName, isFallback ->
-                serviceLayouts[fileName] = Pair(keyboard, isFallback)
-            },
             onFallback = { fallbackLayout ->
                 serviceLayouts[Constants.LAYOUT_CLIPBOARD_DEFAULT] = Pair(fallbackLayout, true)
-                Log.w(TAG, "Using fallback clipboard layout.")
             }
         )
 
@@ -810,42 +749,10 @@ class CustomKeyboardService : InputMethodService() {
     }
 
     private fun reloadLayouts(
-        directory: File,
         layoutType: String,
-        onFileParsed: (CustomKeyboard, String, Boolean) -> Unit,
         onFallback: (CustomKeyboard) -> Unit
     ) {
-        if (!directory.exists() || !directory.isDirectory) {
-            val errorMsg = "$layoutType layouts directory does not exist or is not a directory: ${directory.absolutePath}"
-            ClassFunctionsPopups.showErrorPopup(windowManager, this, TAG, errorMsg)
-            handleFallback(layoutType, onFallback)
-            return
-        }
-
-        val files = directory.listFiles()
-            ?.filter { it.isFile && it.canRead() && it.name.endsWith(".json") }
-            ?.sortedBy { it.name.lowercase() }
-            ?: emptyList()
-
-        if (files.isEmpty()) {
-            handleFallback(layoutType, onFallback)
-            return
-        }
-
-        files.forEach { file ->
-            try {
-                CustomKeyboard.fromJsonFile(this, file, settings) { error ->
-                    ClassFunctionsPopups.showErrorPopup(windowManager, this, TAG, error)
-                    handleFallback(layoutType, onFallback)
-                }?.let { keyboard ->
-                    onFileParsed(keyboard, file.nameWithoutExtension, false)
-                }
-            } catch (e: Exception) {
-                val parseError = "Failed to parse. ${e.message}"
-                ClassFunctionsPopups.showErrorPopup(windowManager, this, TAG, parseError)
-                handleFallback(layoutType, onFallback)
-            }
-        }
+        handleFallback(layoutType, onFallback)
     }
 
 
@@ -853,7 +760,6 @@ class CustomKeyboardService : InputMethodService() {
         try {
             val fallbackLayout = when (layoutType) {
                 "Language" -> loadFallbackLayout(R.raw.keyboard_default, "language")
-                "Service" -> loadFallbackLayout(R.raw.keyboard_service, "service")
                 "Clipboard" -> loadFallbackLayout(R.raw.keyboard_clipboard_default, "clipboard")
                 else -> throw IllegalArgumentException("Unknown layout type: $layoutType")
             }

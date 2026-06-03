@@ -57,6 +57,7 @@ class CustomKeyboardView @JvmOverloads constructor(
     private var isCtrlOn = false
     private var isAltOn = false
     private var isCapsLockOn = false
+    private var isFunctionOn = false
     private var isKeyRepeated = false
     private var isLongPressHandled = false
     private var downKeyIndex = -1
@@ -135,7 +136,7 @@ class CustomKeyboardView @JvmOverloads constructor(
         // Start repeatable keys only if repeatable
         if (key.isRepeatable == true) {
             startKeyRepeat(key)
-        } else {
+        } else if (!isFunctionOn) {
             // Schedule long press for non-repeatable keys
             scheduleLongPress(key)
         }
@@ -154,6 +155,9 @@ class CustomKeyboardView @JvmOverloads constructor(
 
         key?.let {
             when {
+                isFunctionOn && key.keyCodeFunction != null -> {
+                   keyboardActionListener?.onKey(it.keyCodeFunction, it.labelFunction)
+                }
                 isLongPressHandled -> {
                     return
                 }
@@ -245,6 +249,7 @@ class CustomKeyboardView @JvmOverloads constructor(
             KeyEvent.KEYCODE_CTRL_LEFT, KeyEvent.KEYCODE_CTRL_RIGHT -> isCtrlOn
             KeyEvent.KEYCODE_ALT_LEFT, KeyEvent.KEYCODE_ALT_RIGHT -> isAltOn
             KeyEvent.KEYCODE_CAPS_LOCK -> isCapsLockOn
+	    KeyEvent.KEYCODE_FUNCTION -> isFunctionOn
             else -> false
         }
     }
@@ -613,11 +618,12 @@ class CustomKeyboardView @JvmOverloads constructor(
         }
     }
 
-    fun updateMetaState(shiftOn: Boolean, ctrlOn: Boolean, altOn: Boolean, capsLockOn: Boolean) {
+    fun updateMetaState(shiftOn: Boolean, ctrlOn: Boolean, altOn: Boolean, capsLockOn: Boolean, functionOn: Boolean) {
         isShiftOn = shiftOn
         isCtrlOn = ctrlOn
         isAltOn = altOn
         isCapsLockOn = capsLockOn
+        isFunctionOn = functionOn
         invalidateAllKeys()
     }
 
@@ -642,6 +648,10 @@ class CustomKeyboardView @JvmOverloads constructor(
             key.isModifier == true && key.keyCode !in metaKeyCodes -> {
                 // Modifier keys not in meta keys list (like Esc, Ent, Tab) retain their label.
                 key.label
+            }
+            key.isModifier == false && isFunctionOn -> {
+                // Non-modifier keys (ordinary characters) shift to uppercase when Shift or Caps Lock is active.
+                key.labelFunction?.uppercase()
             }
             key.isModifier == false && (isShiftOn || isCapsLockOn) -> {
                 // Non-modifier keys (ordinary characters) shift to uppercase when Shift or Caps Lock is active.
